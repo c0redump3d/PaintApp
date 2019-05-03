@@ -35,6 +35,8 @@ namespace PaintApp
 
         bool animation = false;
 
+        bool transparencyEnabled = false;
+
         //options for app
         bool showGrid = true;
         bool drawEllipse = false;
@@ -73,6 +75,8 @@ namespace PaintApp
 
         }
 
+        #region Controls
+
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
             switch (e.KeyCode)
@@ -108,6 +112,10 @@ namespace PaintApp
             drawBoard.Invalidate();
         }
 
+        #endregion
+
+        #region Draw Board Paint
+
         private void DrawBoard_Paint(object sender, PaintEventArgs e)
         {
             // so damn ugly, but it works /shrug
@@ -123,7 +131,10 @@ namespace PaintApp
                 {
                     for (int x = 0; x < 20; x++) //simple 20x20 grid.
                         for (int y = 0; y < 20; y++)
-                            e.Graphics.DrawRectangle(Pens.Black, x * 32, y * 32, 32, 32);
+                            if (!transparencyEnabled)
+                                e.Graphics.DrawRectangle(Pens.Black, x * 32, y * 32, 32, 32);
+                            else
+                                e.Graphics.DrawRectangle(new Pen(this.BackColor), x * 32, y * 32, 32, 32);
                 }
             }
             else
@@ -137,11 +148,18 @@ namespace PaintApp
                 {
                     for (int x = 0; x < 20; x++) //simple 20x20 grid.
                         for (int y = 0; y < 20; y++)
-                            e.Graphics.DrawEllipse(Pens.Black, x * 32, y * 32, 32, 32);
+                            if (!transparencyEnabled)
+                                e.Graphics.DrawEllipse(Pens.Black, x * 32, y * 32, 32, 32);
+                            else
+                                e.Graphics.DrawEllipse(new Pen(this.BackColor), x * 32, y * 32, 32, 32);
                 }
             }
             
         }
+
+        #endregion
+
+        #region Board Functions
 
         private void placeBlock()
         {
@@ -180,6 +198,23 @@ namespace PaintApp
             }
         }
 
+        private void removeColor()
+        {//reverse of what placeBlock() does.
+            List<ColoredRectangle> removeblock = rect.ToList();
+            for (int i = rect.Length - 1; i > 0; i--)
+            {
+                if (rect[i].Color.Color.ToArgb() == rectColorPicker.Color.ToArgb()) // if player x, y = another rectangles position, find that rectangle in the array index and remove it.
+                {
+                    removeblock.RemoveAt(i);
+                    rect = removeblock.ToArray();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Screenshot
+
         private void screenshotBoard()
         {
             bool dialogClosed = false;
@@ -187,22 +222,32 @@ namespace PaintApp
             //resizing feature implemented :)
             if (saveBitmapDialog.ShowDialog() == DialogResult.OK)
             {
-                Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height); // create a new blank bitmap
-
-                drawBoard.BackColor = Color.Black;
-
-                drawBoard.DrawToBitmap(bmp, new Rectangle(0, 0,
-                            drawBoard.Width, drawBoard.Height)); // now, draw graphics from drawBoard onto the blank bitmap
-
-                drawBoard.BackColor = Color.Transparent;
-
-                bmp.Save(@"C:\temp\temp.png", ImageFormat.Png); // save temp png. now time for resizing
 
                 TextInputBox tb = new TextInputBox();
                 tb.ShowDialog();
 
                 while (tb.isInputtingNum())
                     dialogClosed = false;
+
+                Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb); // create a new blank bitmap
+
+                if (tb.enableTransparency())
+                {
+                    this.TransparencyKey = this.BackColor;
+                    transparencyEnabled = true;
+                }
+                else
+                {
+                    transparencyEnabled = false;
+                }
+
+                drawBoard.DrawToBitmap(bmp, new Rectangle(0, 0,
+                            drawBoard.Width, drawBoard.Height)); // now, draw graphics from drawBoard onto the blank bitmap
+
+                if(transparencyEnabled)
+                    bmp.MakeTransparent(this.BackColor);
+
+                bmp.Save(@"C:\temp\temp.png", ImageFormat.Png); // save temp png. now time for resizing
 
                 dialogClosed = true;
                 if (dialogClosed)
@@ -215,6 +260,8 @@ namespace PaintApp
                         resizedImage.Save(saveBitmapDialog.FileName, ImageFormat.Png);
                     }
                     File.Delete(@"C:\temp\temp.png"); // delete the temporary file, no point in having it.
+                    this.TransparencyKey = Color.Beige;
+                    transparencyEnabled = false;
                 }
             }
         }
@@ -236,6 +283,10 @@ namespace PaintApp
             return newImage;
         }
 
+        #endregion
+
+        #region Tool Bar Animation
+
         private void hideOrShowToolBar(bool start)
         {
             if (start)
@@ -249,6 +300,66 @@ namespace PaintApp
                 animationTimer.Start();
             }
         }
+
+        private void AnimationTimer_Tick(object sender, EventArgs e)
+        {
+            if (animation)
+            {
+                if (this.Width > 672)
+                {
+                    this.Width -= 4;
+                    hidetoolbarLabel.Left -= 4;
+                    hidetoolbarLabel.Text = "|";
+                }
+                else
+                {
+                    animationTimer.Stop();
+                    hidetoolbarLabel.Text = ">";
+                    showOrHideLabel(this, true);
+                }
+            }
+            else
+            {
+                if (this.Width < 782)
+                {
+                    this.Width += 4;
+                    hidetoolbarLabel.Left += 4;
+                    hidetoolbarLabel.Text = "|";
+                    showOrHideLabel(this, false);
+                }
+                else
+                {
+                    animationTimer.Stop();
+                    hidetoolbarLabel.Text = "<";
+                }
+            }
+
+        }
+
+        private void showOrHideLabel(Control control, bool hide)
+        {
+            if (control is Label)
+            {
+                Label buttonLabels = (Label)control;
+                if (!buttonLabels.Text.StartsWith(">"))
+                {
+                    if (hide)
+                    {
+                        buttonLabels.Hide();
+                    }
+                    else
+                    {
+                        buttonLabels.Show();
+                    }
+                }
+            }
+
+            foreach (Control c in control.Controls)
+                showOrHideLabel(c, hide);
+
+        }
+
+        #endregion
 
         #region Files
 
@@ -309,6 +420,8 @@ namespace PaintApp
 
                 StreamReader sr = new StreamReader(location);
 
+                Color oldColor = rectColorPicker.Color;
+
                 resetBoard(); // reset board, no overlapping artwork
 
                 //this first step we actually place/create rectangles
@@ -324,13 +437,19 @@ namespace PaintApp
                     }catch(Exception ex)
                     {
                         MessageBox.Show(ex.Message);
+                        return;
                     }
                 }
+
+                //deletes that weird invisible block in top left corner.
+                for (int i = rect.Length - 1; i > 0; i--)
+                    if (rect[i].Color.Color.ToArgb() == 0)
+                        deleteBlock();
 
                 //reset player pos so theyre not in the middle of nowhere
                 player.X = 0;
                 player.Y = 0;
-                rectColorPicker.Color = Color.White;
+                rectColorPicker.Color = oldColor;
 
                 sr.Close();//close text file.
                 MessageBox.Show("Successfully opened: " + location);
@@ -338,11 +457,13 @@ namespace PaintApp
             catch(Exception ex)
             {
                 MessageBox.Show(ex.Message + "\nOkay seriously. How did you manage to do this? We were able to successfully find the length of the file but not able to place rects in correct pos.");
+                return;
             }
         }
 
         #endregion
 
+        #region Buttons
         private void DisableGridLabel_Click(object sender, EventArgs e)
         {
             if (showGrid)
@@ -417,53 +538,6 @@ namespace PaintApp
             drawBoard.Invalidate();
         }
 
-        private void AnimationTimer_Tick(object sender, EventArgs e)
-        {
-            if (animation)
-            {
-                if (this.Width > 672)
-                {
-                    this.Width -= 4;
-                    hidetoolbarLabel.Left -= 4;
-                    hidetoolbarLabel.Text = "|";
-                }
-                else
-                {
-                    animationTimer.Stop();
-                    hidetoolbarLabel.Text = ">";
-                    colorPickerButton.Hide();
-                    setDrawEllipseLabel.Hide();
-                    resetBoardLabel.Hide();
-                    saveFileLabel.Hide();
-                    openFileLabel.Hide();
-                    disableGridLabel.Hide();
-                    takePictureLabel.Hide();
-                }
-            }
-            else
-            {
-                if (this.Width < 782)
-                {
-                    this.Width += 4;
-                    hidetoolbarLabel.Left += 4;
-                    hidetoolbarLabel.Text = "|";
-                    colorPickerButton.Show();
-                    setDrawEllipseLabel.Show();
-                    resetBoardLabel.Show();
-                    saveFileLabel.Show();
-                    openFileLabel.Show();
-                    disableGridLabel.Show();
-                    takePictureLabel.Show();
-                }
-                else
-                {
-                    animationTimer.Stop();
-                    hidetoolbarLabel.Text = "<";
-                }
-            }
-
-        }
-
         private void HidetoolbarLabel_Click(object sender, EventArgs e)
         {
             if (this.Width > 672)
@@ -482,5 +556,52 @@ namespace PaintApp
                 if (player.Contains(rect[i].Rect))
                     rectColorPicker.Color = rect[i].Color.Color;
         }
+
+        private void FillColorLabel_Click(object sender, EventArgs e)
+        {
+            int oldX;
+            int oldY;
+
+            oldX = player.X;
+            oldY = player.Y;
+
+            player.X = 0;
+            player.Y = 0;
+            for (int i = 0; i < 400; i++)
+            {
+                placeBlock();
+
+                if (player.X < 608)
+                    player.X += 32;
+                else
+                    player.X = 0;
+
+                if (player.X == 0)
+                    if (player.Y < 608)
+                        player.Y += 32;
+
+                if (player.X == 608 && player.Y == 608)
+                {
+                    placeBlock();
+                }
+            }
+
+            player.X = oldX;
+            player.Y = oldY;
+        }
+
+        private void RemoveColorLabel_Click(object sender, EventArgs e)
+        {
+            removeColor();
+            drawBoard.Invalidate();
+        }
+        private void HelpLabel_Click(object sender, EventArgs e)
+        {
+            HelpForm hf = new HelpForm();
+
+            hf.ShowDialog();
+        }
+        #endregion
+
     }
 }

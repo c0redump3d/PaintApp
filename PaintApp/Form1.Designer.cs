@@ -45,6 +45,9 @@
             this.animationTimer = new System.Windows.Forms.Timer(this.components);
             this.hidetoolbarLabel = new System.Windows.Forms.Label();
             this.getColorLabel = new MaterialSkin.Controls.MaterialLabel();
+            this.removeColorLabel = new MaterialSkin.Controls.MaterialLabel();
+            this.fillColorLabel = new MaterialSkin.Controls.MaterialLabel();
+            this.helpLabel = new MaterialSkin.Controls.MaterialLabel();
             ((System.ComponentModel.ISupportInitialize)(this.drawBoard)).BeginInit();
             this.SuspendLayout();
             // 
@@ -114,7 +117,7 @@
             this.saveFileLabel.Depth = 0;
             this.saveFileLabel.Font = new System.Drawing.Font("Roboto", 11F);
             this.saveFileLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.saveFileLabel.Location = new System.Drawing.Point(667, 654);
+            this.saveFileLabel.Location = new System.Drawing.Point(667, 574);
             this.saveFileLabel.MouseState = MaterialSkin.MouseState.HOVER;
             this.saveFileLabel.Name = "saveFileLabel";
             this.saveFileLabel.Size = new System.Drawing.Size(69, 19);
@@ -129,7 +132,7 @@
             this.openFileLabel.Depth = 0;
             this.openFileLabel.Font = new System.Drawing.Font("Roboto", 11F);
             this.openFileLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.openFileLabel.Location = new System.Drawing.Point(667, 694);
+            this.openFileLabel.Location = new System.Drawing.Point(667, 614);
             this.openFileLabel.MouseState = MaterialSkin.MouseState.HOVER;
             this.openFileLabel.Name = "openFileLabel";
             this.openFileLabel.Size = new System.Drawing.Size(71, 19);
@@ -144,7 +147,7 @@
             this.resetBoardLabel.Depth = 0;
             this.resetBoardLabel.Font = new System.Drawing.Font("Roboto", 11F);
             this.resetBoardLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.resetBoardLabel.Location = new System.Drawing.Point(667, 534);
+            this.resetBoardLabel.Location = new System.Drawing.Point(667, 494);
             this.resetBoardLabel.MouseState = MaterialSkin.MouseState.HOVER;
             this.resetBoardLabel.Name = "resetBoardLabel";
             this.resetBoardLabel.Size = new System.Drawing.Size(47, 19);
@@ -159,7 +162,7 @@
             this.takePictureLabel.Depth = 0;
             this.takePictureLabel.Font = new System.Drawing.Font("Roboto", 11F);
             this.takePictureLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.takePictureLabel.Location = new System.Drawing.Point(667, 574);
+            this.takePictureLabel.Location = new System.Drawing.Point(667, 534);
             this.takePictureLabel.MouseState = MaterialSkin.MouseState.HOVER;
             this.takePictureLabel.Name = "takePictureLabel";
             this.takePictureLabel.Size = new System.Drawing.Size(85, 19);
@@ -211,11 +214,59 @@
             this.getColorLabel.Text = "Get Color";
             this.getColorLabel.Click += new System.EventHandler(this.GetColorLabel_Click);
             // 
+            // removeColorLabel
+            // 
+            this.removeColorLabel.AutoSize = true;
+            this.removeColorLabel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.removeColorLabel.Depth = 0;
+            this.removeColorLabel.Font = new System.Drawing.Font("Roboto", 11F);
+            this.removeColorLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.removeColorLabel.Location = new System.Drawing.Point(667, 275);
+            this.removeColorLabel.MouseState = MaterialSkin.MouseState.HOVER;
+            this.removeColorLabel.Name = "removeColorLabel";
+            this.removeColorLabel.Size = new System.Drawing.Size(104, 19);
+            this.removeColorLabel.TabIndex = 10;
+            this.removeColorLabel.Text = "Remove Color";
+            this.removeColorLabel.Click += new System.EventHandler(this.RemoveColorLabel_Click);
+            // 
+            // fillColorLabel
+            // 
+            this.fillColorLabel.AutoSize = true;
+            this.fillColorLabel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.fillColorLabel.Depth = 0;
+            this.fillColorLabel.Font = new System.Drawing.Font("Roboto", 11F);
+            this.fillColorLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.fillColorLabel.Location = new System.Drawing.Point(667, 235);
+            this.fillColorLabel.MouseState = MaterialSkin.MouseState.HOVER;
+            this.fillColorLabel.Name = "fillColorLabel";
+            this.fillColorLabel.Size = new System.Drawing.Size(70, 19);
+            this.fillColorLabel.TabIndex = 11;
+            this.fillColorLabel.Text = "Fill Color";
+            this.fillColorLabel.Click += new System.EventHandler(this.FillColorLabel_Click);
+            // 
+            // helpLabel
+            // 
+            this.helpLabel.AutoSize = true;
+            this.helpLabel.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.helpLabel.Depth = 0;
+            this.helpLabel.Font = new System.Drawing.Font("Roboto", 11F);
+            this.helpLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.helpLabel.Location = new System.Drawing.Point(667, 694);
+            this.helpLabel.MouseState = MaterialSkin.MouseState.HOVER;
+            this.helpLabel.Name = "helpLabel";
+            this.helpLabel.Size = new System.Drawing.Size(40, 19);
+            this.helpLabel.TabIndex = 12;
+            this.helpLabel.Text = "Help";
+            this.helpLabel.Click += new System.EventHandler(this.HelpLabel_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(782, 729);
+            this.Controls.Add(this.helpLabel);
+            this.Controls.Add(this.fillColorLabel);
+            this.Controls.Add(this.removeColorLabel);
             this.Controls.Add(this.getColorLabel);
             this.Controls.Add(this.hidetoolbarLabel);
             this.Controls.Add(this.takePictureLabel);
@@ -255,6 +306,9 @@
         private System.Windows.Forms.Timer animationTimer;
         private System.Windows.Forms.Label hidetoolbarLabel;
         private MaterialSkin.Controls.MaterialLabel getColorLabel;
+        private MaterialSkin.Controls.MaterialLabel removeColorLabel;
+        private MaterialSkin.Controls.MaterialLabel fillColorLabel;
+        private MaterialSkin.Controls.MaterialLabel helpLabel;
     }
 }
 

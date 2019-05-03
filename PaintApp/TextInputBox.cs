@@ -15,8 +15,9 @@ namespace PaintApp
     public partial class TextInputBox : MaterialForm
     {
         bool isInputtingNumber = true;
-        int Width = 64;
-        int Height = 64;
+        bool enableTrans = true;
+        int picWidth = 64;
+        int picHeight = 64;
 
         public TextInputBox()
         {
@@ -38,8 +39,8 @@ namespace PaintApp
             if(int.TryParse(materialSingleLineTextField1.Text, out width) && int.TryParse(materialSingleLineTextField1.Text, out height))
             {
                 Form1 f1 = new Form1();
-                Width = width;
-                Height = height;
+                picWidth = width;
+                picHeight = height;
                 isInputtingNumber = false;
                 this.Close();
             }
@@ -52,17 +53,34 @@ namespace PaintApp
 
         public int getWidth()
         {
-            return Width;
+            return picWidth;
         }
 
         public int getHeight()
         {
-            return Height;
+            return picHeight;
         }
 
         public bool isInputtingNum()
         {
             return isInputtingNumber;
+        }
+
+        private void MaterialCheckBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (materialCheckBox1.Checked)
+            {
+                enableTrans = true;
+            }
+            else
+            {
+                enableTrans = false;
+            }
+        }
+
+        public bool enableTransparency()
+        {
+            return enableTrans;
         }
     }
 }

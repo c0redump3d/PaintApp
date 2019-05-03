@@ -34,6 +34,7 @@
             this.materialSingleLineTextField1 = new MaterialSkin.Controls.MaterialSingleLineTextField();
             this.materialSingleLineTextField2 = new MaterialSkin.Controls.MaterialSingleLineTextField();
             this.materialRaisedButton1 = new MaterialSkin.Controls.MaterialRaisedButton();
+            this.materialCheckBox1 = new MaterialSkin.Controls.MaterialCheckBox();
             this.SuspendLayout();
             // 
             // materialLabel1
@@ -114,11 +115,32 @@
             this.materialRaisedButton1.UseVisualStyleBackColor = true;
             this.materialRaisedButton1.Click += new System.EventHandler(this.MaterialRaisedButton1_Click);
             // 
+            // materialCheckBox1
+            // 
+            this.materialCheckBox1.AutoSize = true;
+            this.materialCheckBox1.Checked = true;
+            this.materialCheckBox1.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.materialCheckBox1.Depth = 0;
+            this.materialCheckBox1.Font = new System.Drawing.Font("Roboto", 10F);
+            this.materialCheckBox1.Location = new System.Drawing.Point(9, 207);
+            this.materialCheckBox1.Margin = new System.Windows.Forms.Padding(0);
+            this.materialCheckBox1.MouseLocation = new System.Drawing.Point(-1, -1);
+            this.materialCheckBox1.MouseState = MaterialSkin.MouseState.HOVER;
+            this.materialCheckBox1.Name = "materialCheckBox1";
+            this.materialCheckBox1.Ripple = true;
+            this.materialCheckBox1.Size = new System.Drawing.Size(105, 30);
+            this.materialCheckBox1.TabIndex = 5;
+            this.materialCheckBox1.Text = "Transparent";
+            this.materialCheckBox1.UseVisualStyleBackColor = true;
+            this.materialCheckBox1.CheckedChanged += new System.EventHandler(this.MaterialCheckBox1_CheckedChanged);
+            // 
             // TextInputBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(350, 246);
+            this.ControlBox = false;
+            this.Controls.Add(this.materialCheckBox1);
             this.Controls.Add(this.materialRaisedButton1);
             this.Controls.Add(this.materialSingleLineTextField2);
             this.Controls.Add(this.materialSingleLineTextField1);
@@ -128,6 +150,7 @@
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "TextInputBox";
+            this.ShowInTaskbar = false;
             this.Sizable = false;
             this.Text = "Picture Settings";
             this.ResumeLayout(false);
@@ -142,5 +165,6 @@
         private MaterialSkin.Controls.MaterialSingleLineTextField materialSingleLineTextField1;
         private MaterialSkin.Controls.MaterialSingleLineTextField materialSingleLineTextField2;
         private MaterialSkin.Controls.MaterialRaisedButton materialRaisedButton1;
+        private MaterialSkin.Controls.MaterialCheckBox materialCheckBox1;
     }
 }

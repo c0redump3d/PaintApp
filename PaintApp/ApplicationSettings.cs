@@ -34,7 +34,7 @@ namespace PaintApp
             {
                 MessageBox.Show("Error. File was not found. Please re-run this program.");
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 notFirstStart = false;
             }

@@ -61,6 +61,12 @@
   <ItemGroup>
     <Compile Include="ApplicationSettings.cs" />
     <Compile Include="ColoredRectangle.cs" />
+    <Compile Include="HelpForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HelpForm.Designer.cs">
+      <DependentUpon>HelpForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="FirstStartTutorial.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -81,6 +87,9 @@
     <Compile Include="TextInputBox.Designer.cs">
       <DependentUpon>TextInputBox.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="HelpForm.resx">
+      <DependentUpon>HelpForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FirstStartTutorial.resx">
       <DependentUpon>FirstStartTutorial.cs</DependentUpon>
     </EmbeddedResource>
