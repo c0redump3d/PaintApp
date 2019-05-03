@@ -45,6 +45,7 @@
     <Reference Include="MaterialSkin, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\MaterialSkin.Updated.0.2.2\lib\MaterialSkin.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -58,6 +59,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApplicationSettings.cs" />
+    <Compile Include="ColoredRectangle.cs" />
+    <Compile Include="FirstStartTutorial.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="FirstStartTutorial.Designer.cs">
+      <DependentUpon>FirstStartTutorial.cs</DependentUpon>
+    </Compile>
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -66,6 +75,15 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TextInputBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TextInputBox.Designer.cs">
+      <DependentUpon>TextInputBox.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="FirstStartTutorial.resx">
+      <DependentUpon>FirstStartTutorial.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -79,6 +97,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="TextInputBox.resx">
+      <DependentUpon>TextInputBox.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -98,6 +119,36 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\icontest.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\savepic.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\resetboard.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\hide toolbar.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\setcolor.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\disablegrid.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ellipses.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\openpntapp.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\savepntapp.gif" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\arrows.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\movement.gif" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Fody.5.0.1\build\Fody.targets" Condition="Exists('..\packages\Fody.5.0.1\build\Fody.targets')" />

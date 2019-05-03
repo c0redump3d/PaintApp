@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using MaterialSkin;
 using MaterialSkin.Controls;
@@ -15,23 +17,25 @@ namespace PaintApp
 
         /*
          * 
-         * 
-         * Having separate colors for rectangles in the array may not be possible
-         * -- The issue is caused because in the paint function, we are constantly
-         * looping through the array index drawing all the currently existing rectangles.
-         * Without that, the rectangles obviously would not draw. So, in order to fix
-         * I would need to switch to a different way of drawing the rectangles -- which
-         * I have no idea how to do :/.
-         * 
+         * everything i said was a lie, until now.
+         * Multi-Color support is here :D.
+         * saves to files and can be loaded later and will have the correct colors :).
          *
          */
 
-        Rectangle[] rect;
+        //stuff to do with rects
+        Rectangle player;
+        ColoredRectangle[] rect;
         int _x = 0;
         int _y = 0;
+        static Brush blockBrush = Brushes.Blue;
+        Color color = ((SolidBrush)blockBrush).Color;
+
         int length;
-        static Brush testbrush = Brushes.Blue;
-        Color color = ((SolidBrush)testbrush).Color;
+
+        bool animation = false;
+
+        //options for app
         bool showGrid = true;
         bool drawEllipse = false;
         bool takingScreenshot = false;
@@ -40,6 +44,18 @@ namespace PaintApp
         {
             InitializeComponent();
 
+            ApplicationSettings appSettings = new ApplicationSettings();
+
+            appSettings.createFile(); // creates file if necessary
+            appSettings.getFirstLaunch(); // if its first launch below function will launch firststarttutorial
+            appSettings.saveFile(); // save file, just writes one boolean value so isfirstlaunch will return true
+
+            if (!appSettings.isNotFirstLaunch())
+            {
+                FirstStartTutorial tutorial = new FirstStartTutorial();
+                tutorial.ShowDialog();
+            }
+
             //set up material form
             MaterialSkinManager materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
@@ -47,10 +63,14 @@ namespace PaintApp
             materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, 0, TextShade.WHITE);
             //done setting up material form
 
-            //set up rectangle array
-            rect = new Rectangle[1];
-            rect[0] = new Rectangle(_x, _y, 32, 32);
+            //set up rectangle array and set player pos
+            rect = new ColoredRectangle[1];
+            player = new Rectangle(_x, _y, 32, 32);
             //done
+
+            //set color
+            rectColorPicker.Color = Color.White;
+
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -59,23 +79,23 @@ namespace PaintApp
             {
                 case Keys.Up:
                 case Keys.W:
-                    if (rect[0].Y != 0)
-                        rect[0].Y -= 32;
+                    if (player.Y != 0)
+                        player.Y -= 32;
                     break;
                 case Keys.Down:
                 case Keys.S:
-                    if (rect[0].Y != 608)
-                        rect[0].Y += 32;
+                    if (player.Y != 608)
+                        player.Y += 32;
                     break;
                 case Keys.Left:
                 case Keys.A:
-                    if (rect[0].X != 0)
-                        rect[0].X -= 32;
+                    if (player.X != 0)
+                        player.X -= 32;
                     break;
                 case Keys.Right:
                 case Keys.D:
-                    if (rect[0].X != 608)
-                        rect[0].X += 32;
+                    if (player.X != 608)
+                        player.X += 32;
                     break;
                 case Keys.M:
                 case Keys.E:
@@ -95,10 +115,10 @@ namespace PaintApp
             if (!drawEllipse)
             {
                 for (int i = rect.Length - 1; i > 0; i--)
-                    e.Graphics.FillRectangle(testbrush, rect[i]);
+                    e.Graphics.FillRectangle(rect[i].Color, rect[i].Rect);
 
                 if(!takingScreenshot)
-                    e.Graphics.FillRectangle(Brushes.Red, rect[0]); // player
+                    e.Graphics.FillRectangle(Brushes.Red, player); // player
                 if (showGrid)
                 {
                     for (int x = 0; x < 20; x++) //simple 20x20 grid.
@@ -109,10 +129,10 @@ namespace PaintApp
             else
             {
                 for (int i = rect.Length - 1; i > 0; i--)
-                    e.Graphics.FillEllipse(testbrush, rect[i]);
+                    e.Graphics.FillEllipse(rect[i].Color, rect[i].Rect);
 
                 if (!takingScreenshot)
-                    e.Graphics.FillEllipse(Brushes.Red, rect[0]); // player
+                    e.Graphics.FillEllipse(Brushes.Red, player); // player
                 if (showGrid)
                 {
                     for (int x = 0; x < 20; x++) //simple 20x20 grid.
@@ -126,14 +146,11 @@ namespace PaintApp
         private void placeBlock()
         {
             for (int i = rect.Length - 1; i > 0; i--)
-                if (rect[0].Contains(rect[i])) //make sure the player isn't placing a rectangle where one already exists.
+                if (player.Contains(rect[i].Rect)) //make sure the player isn't placing a rectangle where one already exists.
                     return;
-            Rectangle testrec;
-            List<Rectangle> placeblock = rect.ToList();
-            placeblock.Add(testrec = new Rectangle(rect[rect.Length - 1].X, rect[rect.Length - 1].Y, 32, 32)); // create new rectangle, set x,y to player pos and add to array index.
+            List<ColoredRectangle> placeblock = rect.ToList();
+            placeblock.Add(new ColoredRectangle(player.X, player.Y, 32, 32, new SolidBrush(rectColorPicker.Color))); // create new rectangle, set x,y to player pos and add to array index.
             rect = placeblock.ToArray();
-            for (int i = rect.Length - 1; i > 0; i--)
-                rect[i] = rect[i - 1]; //assign correct array index for new rectangle.
             drawBoard.Invalidate();
         }
 
@@ -141,7 +158,7 @@ namespace PaintApp
         {
             if (rect.Length == 1) // if just player is left, we return, no point in clearing an already cleared board
                 return;
-            List<Rectangle> removeall = rect.ToList();
+            List<ColoredRectangle> removeall = rect.ToList();
             for (int i = rect.Length - 1; i > 0; i--) // loop through array index and remove all, except index 0 which is player
             {
                 removeall.Remove(rect[i]);
@@ -152,10 +169,10 @@ namespace PaintApp
 
         private void deleteBlock()
         {//reverse of what placeBlock() does.
-            List<Rectangle> removeblock = rect.ToList();
+            List<ColoredRectangle> removeblock = rect.ToList();
             for (int i = rect.Length - 1; i > 0; i--)
             {
-                if (rect[0].X == rect[i].X && rect[0].Y == rect[i].Y) // if player x, y = another rectangles position, find that rectangle in the array index and remove it.
+                if (player.X == rect[i].Rect.X && player.Y == rect[i].Rect.Y) // if player x, y = another rectangles position, find that rectangle in the array index and remove it.
                 {
                     removeblock.RemoveAt(i);
                     rect = removeblock.ToArray();
@@ -165,15 +182,71 @@ namespace PaintApp
 
         private void screenshotBoard()
         {
-            //Maybe implement a resizing feature?
+            bool dialogClosed = false;
+
+            //resizing feature implemented :)
             if (saveBitmapDialog.ShowDialog() == DialogResult.OK)
             {
                 Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height); // create a new blank bitmap
 
+                drawBoard.BackColor = Color.Black;
+
                 drawBoard.DrawToBitmap(bmp, new Rectangle(0, 0,
                             drawBoard.Width, drawBoard.Height)); // now, draw graphics from drawBoard onto the blank bitmap
 
-                bmp.Save(saveBitmapDialog.FileName, ImageFormat.Png); // save the bitmap as a png file and done :)
+                drawBoard.BackColor = Color.Transparent;
+
+                bmp.Save(@"C:\temp\temp.png", ImageFormat.Png); // save temp png. now time for resizing
+
+                TextInputBox tb = new TextInputBox();
+                tb.ShowDialog();
+
+                while (tb.isInputtingNum())
+                    dialogClosed = false;
+
+                dialogClosed = true;
+                if (dialogClosed)
+                {
+                    using (var tempimg = Image.FromFile(@"C:\temp\temp.png"))
+                    using (var resizedImage = resizePic(tempimg, tb.getWidth(), tb.getHeight()))
+                    {
+                        bmp.Dispose();
+                        bmp = null;
+                        resizedImage.Save(saveBitmapDialog.FileName, ImageFormat.Png);
+                    }
+                    File.Delete(@"C:\temp\temp.png"); // delete the temporary file, no point in having it.
+                }
+            }
+        }
+
+        public static Image resizePic(Image tempPic, int width, int height)
+        {
+            double ratioX = (double)width / tempPic.Width;
+            double ratioY = (double)height / tempPic.Height;
+            double ratio = Math.Min(ratioX, ratioY);
+
+            int newWidth = (int)(tempPic.Width * ratio);
+            int newHeight = (int)(tempPic.Height * ratio);
+
+            Bitmap newImage = new Bitmap(newWidth, newHeight);
+
+            using (Graphics graphics = Graphics.FromImage(newImage))
+                graphics.DrawImage(tempPic, 0, 0, newWidth, newHeight);
+
+            return newImage;
+        }
+
+        private void hideOrShowToolBar(bool start)
+        {
+            if (start)
+            {
+                animation = true;
+                animationTimer.Start();
+            }
+            else
+            {
+                animation = false;
+                animationTimer.Start();
             }
         }
 
@@ -186,13 +259,11 @@ namespace PaintApp
                 StreamWriter sw = new StreamWriter(location);
                 for (int i = rect.Length - 1; i > 0; i--)
                 {
-                    //write x coordinate, newline, write y coordinate, next rectangle, etc.
-                    sw.WriteLine(rect[i].X);
-                    sw.WriteLine(rect[i].Y);
+                    //write x coordinate, newline, write y coordinate, and write color, next rectangle, etc.
+                    sw.WriteLine(rect[i].Rect.X);
+                    sw.WriteLine(rect[i].Rect.Y);
+                    sw.WriteLine(rect[i].Color.Color.ToArgb());
                 }
-
-                sw.WriteLine(drawEllipse);
-                sw.WriteLine(color.ToArgb());
 
                 sw.Close();
 
@@ -212,14 +283,14 @@ namespace PaintApp
             {
                 StreamReader sr1 = new StreamReader(location);
 
-                string test;
+                string lengthString;
 
-                while ((test = sr1.ReadLine()) != null)
+                while ((lengthString = sr1.ReadLine()) != null) // for every line, add one to length.
                 {
                     length++;
                 }
 
-                if(length > 801) // 800 is filled board, simple check to make sure they're not trying to add more blocks then whats allowed
+                if(length > 1201) // 800 is filled board, simple check to make sure they're not trying to add more blocks then whats allowed
                 {
                     MessageBox.Show("Are you sure this is a PaintApp file? Seems to be to large to be, stopping...");
                     sr1.Close();
@@ -246,8 +317,9 @@ namespace PaintApp
                     // super simple, for each line in text file, we read next line, set rectx = to x in file and recty = y in file and place.
                     try
                     {
-                        rect[0].X = Convert.ToInt32(sr.ReadLine());
-                        rect[0].Y = Convert.ToInt32(sr.ReadLine());
+                        player.X = Convert.ToInt32(sr.ReadLine());
+                        player.Y = Convert.ToInt32(sr.ReadLine());
+                        rectColorPicker.Color = Color.FromArgb(Convert.ToInt32(sr.ReadLine()));
                         placeBlock();
                     }catch(Exception ex)
                     {
@@ -255,20 +327,10 @@ namespace PaintApp
                     }
                 }
 
-                //second step is to find out if we should enable ellipses and find out what color to set the rectangles to.
-                try
-                {
-                    drawEllipse = Convert.ToBoolean(sr.ReadLine());
-                    color = new SolidBrush(Color.FromArgb(Convert.ToInt32(sr.ReadLine()))).Color;
-                    testbrush = new SolidBrush(color);
-                }catch(Exception ex)
-                {
-                    MessageBox.Show(ex.Message);
-                }
-
                 //reset player pos so theyre not in the middle of nowhere
-                rect[0].X = 0;
-                rect[0].Y = 0;
+                player.X = 0;
+                player.Y = 0;
+                rectColorPicker.Color = Color.White;
 
                 sr.Close();//close text file.
                 MessageBox.Show("Successfully opened: " + location);
@@ -303,7 +365,7 @@ namespace PaintApp
             {
                 color = new SolidBrush(rectColorPicker.Color).Color;
 
-                testbrush = new SolidBrush(color);
+                blockBrush = new SolidBrush(color);
             }
             drawBoard.Invalidate();
         }
@@ -319,7 +381,7 @@ namespace PaintApp
             else
             {
                 drawEllipse = true;
-                setDrawEllipseLabel.Text = "Rectangles";
+                setDrawEllipseLabel.Text = "Squares";
                 drawBoard.Invalidate();
             }
         }
@@ -353,6 +415,72 @@ namespace PaintApp
             screenshotBoard();
             takingScreenshot = false;
             drawBoard.Invalidate();
+        }
+
+        private void AnimationTimer_Tick(object sender, EventArgs e)
+        {
+            if (animation)
+            {
+                if (this.Width > 672)
+                {
+                    this.Width -= 4;
+                    hidetoolbarLabel.Left -= 4;
+                    hidetoolbarLabel.Text = "|";
+                }
+                else
+                {
+                    animationTimer.Stop();
+                    hidetoolbarLabel.Text = ">";
+                    colorPickerButton.Hide();
+                    setDrawEllipseLabel.Hide();
+                    resetBoardLabel.Hide();
+                    saveFileLabel.Hide();
+                    openFileLabel.Hide();
+                    disableGridLabel.Hide();
+                    takePictureLabel.Hide();
+                }
+            }
+            else
+            {
+                if (this.Width < 782)
+                {
+                    this.Width += 4;
+                    hidetoolbarLabel.Left += 4;
+                    hidetoolbarLabel.Text = "|";
+                    colorPickerButton.Show();
+                    setDrawEllipseLabel.Show();
+                    resetBoardLabel.Show();
+                    saveFileLabel.Show();
+                    openFileLabel.Show();
+                    disableGridLabel.Show();
+                    takePictureLabel.Show();
+                }
+                else
+                {
+                    animationTimer.Stop();
+                    hidetoolbarLabel.Text = "<";
+                }
+            }
+
+        }
+
+        private void HidetoolbarLabel_Click(object sender, EventArgs e)
+        {
+            if (this.Width > 672)
+            {
+                hideOrShowToolBar(true);
+            }
+            else
+            {
+                hideOrShowToolBar(false);
+            }
+        }
+
+        private void GetColorLabel_Click(object sender, EventArgs e)
+        {
+            for (int i = rect.Length - 1; i > 0; i--)
+                if (player.Contains(rect[i].Rect))
+                    rectColorPicker.Color = rect[i].Color.Color;
         }
     }
 }
