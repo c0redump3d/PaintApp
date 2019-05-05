@@ -16,8 +16,8 @@ namespace PaintApp
     {
         bool isInputtingNumber = true;
         bool enableTrans = true;
-        int picWidth = 64;
-        int picHeight = 64;
+        int picWidth = 640;
+        int picHeight = 640;
 
         public TextInputBox()
         {
@@ -36,7 +36,7 @@ namespace PaintApp
         {
             int width;
             int height;
-            if(int.TryParse(materialSingleLineTextField1.Text, out width) && int.TryParse(materialSingleLineTextField1.Text, out height))
+            if(int.TryParse(materialSingleLineTextField1.Text, out width) && int.TryParse(materialSingleLineTextField2.Text, out height))
             {
                 picWidth = width;
                 picHeight = height;

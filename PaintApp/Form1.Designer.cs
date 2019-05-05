@@ -99,11 +99,13 @@
             // 
             this.savePaintDialog.DefaultExt = "pntapp";
             this.savePaintDialog.Filter = "PaintApp Files (*.pntapp)|*.pntapp";
+            this.savePaintDialog.Title = "Save Drawing";
             // 
             // saveBitmapDialog
             // 
             this.saveBitmapDialog.DefaultExt = "png";
-            this.saveBitmapDialog.Filter = "PNG File (*.png)|.png";
+            this.saveBitmapDialog.Filter = "PNG File (*.png)|*.png";
+            this.saveBitmapDialog.Title = "Save as Picture";
             // 
             // disableGridLabel
             // 

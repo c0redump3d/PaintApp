@@ -28,8 +28,6 @@ namespace PaintApp
         //stuff to do with rects
         Rectangle player;
         ColoredRectangle[] rect;
-        int _x = 0;
-        int _y = 0;
         int maxBound = 608;
         int minBound = 0;
         int gridSize = 20;
@@ -62,8 +60,6 @@ namespace PaintApp
         public Form1(string path)
         {
             InitializeComponent();
-
-            Program.KeepRunning = false;
 
             if (path != string.Empty && Path.GetExtension(path).ToLower() == ".pntapp")
             {
@@ -120,7 +116,7 @@ namespace PaintApp
 
             //set up rectangle array and set player pos
             rect = new ColoredRectangle[1];
-            player = new Rectangle(_x, _y, 32, 32);
+            player = new Rectangle(0, 0, 32, 32);
             //done
 
             //set color
@@ -150,6 +146,8 @@ namespace PaintApp
 
             autoSaveTimer.Start();
             titleUpdate.Start();
+
+            Program.KeepRunning = false;
 
         }
 
@@ -233,35 +231,6 @@ namespace PaintApp
         private void mouseRemove()
         {
 
-            var cursorPos = drawBoard.PointToClient(Cursor.Position);
-
-            double mouseX;
-            double mouseY;
-            int formMouseX;
-            int formMouseY;
-
-            mouseX = cursorPos.X - layoutSize;
-            mouseY = cursorPos.Y - layoutSize;
-
-            formMouseX = (int)Math.Round(Math.Ceiling(mouseX / layoutSize) * layoutSize, MidpointRounding.ToEven);
-            formMouseY = (int)Math.Round(Math.Ceiling(mouseY / layoutSize) * layoutSize, MidpointRounding.ToEven);
-
-
-            if (formMouseY < minBound || formMouseY > maxBound || formMouseX < minBound || formMouseX > maxBound)
-                return;
-
-            player.X = formMouseX;
-            player.Y = formMouseY;
-
-            usingMouseControls = true;
-
-            deleteBlock();
-
-            drawBoard.Invalidate();
-        }
-
-        private void mouseColor()
-        {
             var cursorPos = drawBoard.PointToClient(Cursor.Position);
 
             double mouseX;
@@ -385,10 +354,7 @@ namespace PaintApp
                 {
                     for (int x = 0; x < gridSize; x++) //grid
                         for (int y = 0; y < gridSize; y++)
-                            if (!transparencyEnabled)
                                 e.Graphics.DrawRectangle(Pens.Black, x * layoutSize, y * layoutSize, layoutSize, layoutSize);
-                            else
-                                e.Graphics.DrawRectangle(new Pen(this.BackColor), x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                 }
             }
             else
@@ -396,17 +362,13 @@ namespace PaintApp
                 for (int i = rect.Length - 1; i > 0; i--)
                     e.Graphics.FillEllipse(rect[i].Color, rect[i].Rect);
 
-                if (!usingMouseControls)
-                    if (!takingScreenshot)
-                        e.Graphics.FillEllipse(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
+                if (!takingScreenshot)
+                    e.Graphics.FillEllipse(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
                 if (showGrid)
                 {
                     for (int x = 0; x < gridSize; x++) //grid.
                         for (int y = 0; y < gridSize; y++)
-                            if (!transparencyEnabled)
                                 e.Graphics.DrawEllipse(Pens.Black, x * layoutSize, y * layoutSize, layoutSize, layoutSize);
-                            else
-                                e.Graphics.DrawEllipse(new Pen(this.BackColor), x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                 }
             }
             
@@ -491,7 +453,7 @@ namespace PaintApp
                 while (tb.isInputtingNum())
                     dialogClosed = false;
 
-                Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb); // create a new blank bitmap
+                Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height, PixelFormat.Format32bppArgb); // create a new blank bitmap
 
                 if (tb.enableTransparency())
                 {
@@ -692,7 +654,7 @@ namespace PaintApp
                     gridSize = 40;
                     maxBound = 624;
                     smallLayoutLabel.Text = "Larger Layout";
-                    player = new Rectangle(_x, _y, 16, 16);
+                    player = new Rectangle(0, 0, 16, 16);
                     drawBoard.Invalidate();
                 }
 
@@ -787,8 +749,8 @@ namespace PaintApp
 
         private void resetBoardLabel_Click(object sender, EventArgs e)
         {
-            DialogResult dr = MessageBox.Show("This will clear the entire board!\nAre you sure you want to do this?",
-                        "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk);
+            DialogResult dr = MaterialMessageBox.Show("This will clear the entire board!\nAre you sure you want to do this?",
+                        "Warning", MessageBoxIcon.Warning, MessageBoxButtons.YesNo);
             if (dr == DialogResult.Yes)
             {
                 resetBoard();
@@ -797,9 +759,16 @@ namespace PaintApp
 
         private void saveFileLabel_Click(object sender, EventArgs e)
         {
-            savePaintFile(autoSaveLocation);
-            unchanged = rect.Length;
-            this.Text = "PaintApp - " + Path.GetFileNameWithoutExtension(autoSaveLocation);
+            try
+            {
+                savePaintFile(autoSaveLocation);
+                unchanged = rect.Length;
+                this.Text = "PaintApp - " + Path.GetFileNameWithoutExtension(autoSaveLocation);
+                MaterialMessageBox.Show("Successfully saved file.", "Saved File", MessageBoxIcon.Information, MessageBoxButtons.OK);
+            }catch(Exception ex)
+            {
+                MaterialMessageBox.Show(ex.Message, "Error", MessageBoxIcon.Warning, MessageBoxButtons.OK);
+            }
         }
 
         private void closeProjectLabel_Click(object sender, EventArgs e)
@@ -955,8 +924,8 @@ namespace PaintApp
 
         private void SmallLayoutLabel_Click(object sender, EventArgs e)
         {
-            DialogResult dr = MessageBox.Show("In order to change the layout, you must reset the board.\nAre you sure you want to do this?",
-                        "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+            DialogResult dr = MaterialMessageBox.Show("In order to change the layout, you must reset the board.\nAre you sure you want to do this?",
+                        "Warning", MessageBoxIcon.Warning, MessageBoxButtons.YesNo);
             if (dr == DialogResult.Yes)
             {
                 if (smallLayoutLabel.Text == "Smaller Layout" || !smallLayout)
@@ -966,7 +935,7 @@ namespace PaintApp
                     gridSize = 40;
                     maxBound = 624;
                     smallLayoutLabel.Text = "Larger Layout";
-                    player = new Rectangle(_x, _y, 16, 16);
+                    player = new Rectangle(0, 0, 16, 16);
                     drawBoard.Invalidate();
                 }
                 else if (smallLayoutLabel.Text == "Larger Layout" || smallLayout)
@@ -976,7 +945,7 @@ namespace PaintApp
                     gridSize = 20;
                     maxBound = 608;
                     smallLayoutLabel.Text = "Smaller Layout";
-                    player = new Rectangle(_x, _y, 32, 32);
+                    player = new Rectangle(0, 0, 32, 32);
                     drawBoard.Invalidate();
                 }
             }
@@ -993,18 +962,12 @@ namespace PaintApp
         {
             if (unchanged != rect.Length)
             {
-                DialogResult unsaved = MessageBox.Show("You have unsaved progress. Do you want to save before exiting?",
-                            "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+                DialogResult unsaved = MaterialMessageBox.Show("You have unsaved progress. Do you want to save before exiting?",
+                            "Warning", MessageBoxIcon.Warning, MessageBoxButtons.YesNo);
 
                 if (unsaved == DialogResult.Yes)
                     savePaintFile(autoSaveLocation);
             }
-
-            DialogResult exit = MessageBox.Show("Are you sure you want to exit?",
-                            "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (exit == DialogResult.No)
-                e.Cancel = true;
 
         }
 
