@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using MaterialSkin;
@@ -28,8 +30,16 @@ namespace PaintApp
         ColoredRectangle[] rect;
         int _x = 0;
         int _y = 0;
+        int maxBound = 608;
+        int minBound = 0;
+        int gridSize = 20;
+        int layoutSize = 32;
+        int unchanged;
         static Brush blockBrush = Brushes.Blue;
         Color color = ((SolidBrush)blockBrush).Color;
+        SolidBrush playerCol = new SolidBrush(Color.Red);
+
+        string autoSaveLocation;
 
         int length;
 
@@ -37,14 +47,57 @@ namespace PaintApp
 
         bool transparencyEnabled = false;
 
+        bool launchProjScreen = true;
+
+        bool leftMouseDown = false;
+        bool rightMouseDown = false;
+
         //options for app
         bool showGrid = true;
         bool drawEllipse = false;
         bool takingScreenshot = false;
+        bool smallLayout = false;
+        bool usingMouseControls = false;
 
-        public Form1()
+        public Form1(string path)
         {
             InitializeComponent();
+
+            Program.KeepRunning = false;
+
+            if (path != string.Empty && Path.GetExtension(path).ToLower() == ".pntapp")
+            {
+                launchProjScreen = false;
+            }
+
+            LaunchProjectForm launchProj = new LaunchProjectForm();
+
+            if (launchProjScreen)
+            {
+
+                launchProj.ShowDialog();
+
+                if (launchProj.getIsOpening())
+                {
+
+                    if (launchProj.getOpenLocation() == null)
+                    {
+                        this.Dispose();
+                        this.Close();
+                        return;
+                    }
+
+                }
+                else
+                {
+                    if (launchProj.getNewLocation() == null)
+                    {
+                        this.Dispose();
+                        this.Close();
+                        return;
+                    }
+                }
+            }
 
             ApplicationSettings appSettings = new ApplicationSettings();
 
@@ -73,6 +126,31 @@ namespace PaintApp
             //set color
             rectColorPicker.Color = Color.White;
 
+            if (launchProjScreen)
+            {
+                if (launchProj.getIsOpening())
+                {
+                    loadSaveFile(launchProj.getOpenLocation());
+                    autoSaveLocation = launchProj.getOpenLocation();
+                }
+                else
+                {
+                    loadSaveFile(launchProj.getNewLocation());
+                    autoSaveLocation = launchProj.getNewLocation();
+                }
+            }
+
+            if (path != string.Empty && Path.GetExtension(path).ToLower() == ".pntapp")
+            {
+                loadSaveFile(path);
+                autoSaveLocation = path;
+            }
+
+            this.Text = "PaintApp - " + Path.GetFileNameWithoutExtension(autoSaveLocation);
+
+            autoSaveTimer.Start();
+            titleUpdate.Start();
+
         }
 
         #region Controls
@@ -83,23 +161,23 @@ namespace PaintApp
             {
                 case Keys.Up:
                 case Keys.W:
-                    if (player.Y != 0)
-                        player.Y -= 32;
+                    if (player.Y != minBound)
+                        player.Y -= layoutSize;
                     break;
                 case Keys.Down:
                 case Keys.S:
-                    if (player.Y != 608)
-                        player.Y += 32;
+                    if (player.Y != maxBound)
+                        player.Y += layoutSize;
                     break;
                 case Keys.Left:
                 case Keys.A:
-                    if (player.X != 0)
-                        player.X -= 32;
+                    if (player.X != minBound)
+                        player.X -= layoutSize;
                     break;
                 case Keys.Right:
                 case Keys.D:
-                    if (player.X != 608)
-                        player.X += 32;
+                    if (player.X != maxBound)
+                        player.X += layoutSize;
                     break;
                 case Keys.M:
                 case Keys.E:
@@ -110,6 +188,182 @@ namespace PaintApp
                     break;
             }
             drawBoard.Invalidate();
+            usingMouseControls = false;
+        }
+
+        #endregion
+
+        #region Mouse Controls
+
+        /*
+         * 
+         * Seems to be pretty unefficent. Likes to spike CPU usage up a ton.
+         * 
+         */
+
+        private void mousePlace()
+        {
+
+            var cursorPos = drawBoard.PointToClient(Cursor.Position);
+
+            double mouseX;
+            double mouseY;
+            int formMouseX;
+            int formMouseY;
+
+            mouseX = cursorPos.X - layoutSize;
+            mouseY = cursorPos.Y - layoutSize;
+
+            formMouseX = (int)Math.Round(Math.Ceiling(mouseX / layoutSize) * layoutSize, MidpointRounding.ToEven);
+            formMouseY = (int)Math.Round(Math.Ceiling(mouseY / layoutSize) * layoutSize, MidpointRounding.ToEven);
+
+
+            if (formMouseY < minBound || formMouseY > maxBound || formMouseX < minBound || formMouseX > maxBound)
+                return;
+
+            player.X = formMouseX;
+            player.Y = formMouseY;
+
+            usingMouseControls = true;
+
+            placeBlock();
+
+        }
+
+        private void mouseRemove()
+        {
+
+            var cursorPos = drawBoard.PointToClient(Cursor.Position);
+
+            double mouseX;
+            double mouseY;
+            int formMouseX;
+            int formMouseY;
+
+            mouseX = cursorPos.X - layoutSize;
+            mouseY = cursorPos.Y - layoutSize;
+
+            formMouseX = (int)Math.Round(Math.Ceiling(mouseX / layoutSize) * layoutSize, MidpointRounding.ToEven);
+            formMouseY = (int)Math.Round(Math.Ceiling(mouseY / layoutSize) * layoutSize, MidpointRounding.ToEven);
+
+
+            if (formMouseY < minBound || formMouseY > maxBound || formMouseX < minBound || formMouseX > maxBound)
+                return;
+
+            player.X = formMouseX;
+            player.Y = formMouseY;
+
+            usingMouseControls = true;
+
+            deleteBlock();
+
+            drawBoard.Invalidate();
+        }
+
+        private void mouseColor()
+        {
+            var cursorPos = drawBoard.PointToClient(Cursor.Position);
+
+            double mouseX;
+            double mouseY;
+            int formMouseX;
+            int formMouseY;
+
+            mouseX = cursorPos.X - layoutSize;
+            mouseY = cursorPos.Y - layoutSize;
+
+            formMouseX = (int)Math.Round(Math.Ceiling(mouseX / layoutSize) * layoutSize, MidpointRounding.ToEven);
+            formMouseY = (int)Math.Round(Math.Ceiling(mouseY / layoutSize) * layoutSize, MidpointRounding.ToEven);
+
+
+            if (formMouseY < minBound || formMouseY > maxBound || formMouseX < minBound || formMouseX > maxBound)
+                return;
+
+            player.X = formMouseX;
+            player.Y = formMouseY;
+
+            usingMouseControls = true;
+
+            deleteBlock();
+
+            drawBoard.Invalidate();
+        }
+
+        private void DrawBoard_Click(object sender, EventArgs e)
+        {
+            MouseEventArgs mouse = (MouseEventArgs)e;
+
+            if (mouse.Button == MouseButtons.Left && mouse.Button == MouseButtons.Right)
+                return;
+
+            if (mouse.Button == MouseButtons.Left)
+            {
+                mousePlace();
+            }
+            else if (mouse.Button == MouseButtons.Right)
+            {
+                mouseRemove();
+            }
+            else if (mouse.Button == MouseButtons.Middle)
+            {
+                getColorFromBlock();
+            }
+        }
+
+        private void DrawBoard_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && e.Button == MouseButtons.Right)
+                return;
+
+            if (e.Button == MouseButtons.Left)
+            {
+                leftMouseDown = true;
+            }
+            else if (e.Button == MouseButtons.Right)
+            {
+                rightMouseDown = true;
+            }
+        }
+
+        private void DrawBoard_MouseUp(object sender, MouseEventArgs e)
+        {
+            leftMouseDown = false;
+            rightMouseDown = false;
+        }
+
+        private void DrawBoard_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (leftMouseDown)
+                mousePlace();
+            else if (rightMouseDown)
+                mouseRemove();
+
+            if (usingMouseControls)
+            {
+
+                var cursorPos = drawBoard.PointToClient(Cursor.Position);
+
+                double mouseX;
+                double mouseY;
+                int formMouseX;
+                int formMouseY;
+
+                mouseX = cursorPos.X - layoutSize;
+                mouseY = cursorPos.Y - layoutSize;
+
+                formMouseX = (int)Math.Round(Math.Ceiling(mouseX / layoutSize) * layoutSize, MidpointRounding.ToEven);
+                formMouseY = (int)Math.Round(Math.Ceiling(mouseY / layoutSize) * layoutSize, MidpointRounding.ToEven);
+
+
+                if (formMouseY < minBound || formMouseY > maxBound || formMouseX < minBound || formMouseX > maxBound)
+                    return;
+
+                player.X = formMouseX;
+                player.Y = formMouseY;
+
+                drawBoard.Invalidate();
+            }
+
         }
 
         #endregion
@@ -125,16 +379,16 @@ namespace PaintApp
                 for (int i = rect.Length - 1; i > 0; i--)
                     e.Graphics.FillRectangle(rect[i].Color, rect[i].Rect);
 
-                if(!takingScreenshot)
-                    e.Graphics.FillRectangle(Brushes.Red, player); // player
+                if (!takingScreenshot)
+                    e.Graphics.FillRectangle(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
                 if (showGrid)
                 {
-                    for (int x = 0; x < 20; x++) //simple 20x20 grid.
-                        for (int y = 0; y < 20; y++)
+                    for (int x = 0; x < gridSize; x++) //grid
+                        for (int y = 0; y < gridSize; y++)
                             if (!transparencyEnabled)
-                                e.Graphics.DrawRectangle(Pens.Black, x * 32, y * 32, 32, 32);
+                                e.Graphics.DrawRectangle(Pens.Black, x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                             else
-                                e.Graphics.DrawRectangle(new Pen(this.BackColor), x * 32, y * 32, 32, 32);
+                                e.Graphics.DrawRectangle(new Pen(this.BackColor), x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                 }
             }
             else
@@ -142,16 +396,17 @@ namespace PaintApp
                 for (int i = rect.Length - 1; i > 0; i--)
                     e.Graphics.FillEllipse(rect[i].Color, rect[i].Rect);
 
-                if (!takingScreenshot)
-                    e.Graphics.FillEllipse(Brushes.Red, player); // player
+                if (!usingMouseControls)
+                    if (!takingScreenshot)
+                        e.Graphics.FillEllipse(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
                 if (showGrid)
                 {
-                    for (int x = 0; x < 20; x++) //simple 20x20 grid.
-                        for (int y = 0; y < 20; y++)
+                    for (int x = 0; x < gridSize; x++) //grid.
+                        for (int y = 0; y < gridSize; y++)
                             if (!transparencyEnabled)
-                                e.Graphics.DrawEllipse(Pens.Black, x * 32, y * 32, 32, 32);
+                                e.Graphics.DrawEllipse(Pens.Black, x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                             else
-                                e.Graphics.DrawEllipse(new Pen(this.BackColor), x * 32, y * 32, 32, 32);
+                                e.Graphics.DrawEllipse(new Pen(this.BackColor), x * layoutSize, y * layoutSize, layoutSize, layoutSize);
                 }
             }
             
@@ -167,7 +422,7 @@ namespace PaintApp
                 if (player.Contains(rect[i].Rect)) //make sure the player isn't placing a rectangle where one already exists.
                     return;
             List<ColoredRectangle> placeblock = rect.ToList();
-            placeblock.Add(new ColoredRectangle(player.X, player.Y, 32, 32, new SolidBrush(rectColorPicker.Color))); // create new rectangle, set x,y to player pos and add to array index.
+            placeblock.Add(new ColoredRectangle(player.X, player.Y, layoutSize, layoutSize, new SolidBrush(rectColorPicker.Color))); // create new rectangle, set x,y to player pos and add to array index.
             rect = placeblock.ToArray();
             drawBoard.Invalidate();
         }
@@ -199,16 +454,23 @@ namespace PaintApp
         }
 
         private void removeColor()
-        {//reverse of what placeBlock() does.
+        {//neat little feature that will remove all blocks with a certain color.
             List<ColoredRectangle> removeblock = rect.ToList();
             for (int i = rect.Length - 1; i > 0; i--)
             {
-                if (rect[i].Color.Color.ToArgb() == rectColorPicker.Color.ToArgb()) // if player x, y = another rectangles position, find that rectangle in the array index and remove it.
+                if (rect[i].Color.Color.ToArgb() == rectColorPicker.Color.ToArgb()) // if selected color = any placed rectangles, remove it
                 {
                     removeblock.RemoveAt(i);
                     rect = removeblock.ToArray();
                 }
             }
+        }
+
+        private void getColorFromBlock()
+        {
+            for (int i = rect.Length - 1; i > 0; i--)
+                if (player.Contains(rect[i].Rect))
+                    rectColorPicker.Color = rect[i].Color.Color;
         }
 
         #endregion
@@ -368,6 +630,9 @@ namespace PaintApp
             try
             {
                 StreamWriter sw = new StreamWriter(location);
+
+                sw.WriteLine(smallLayout);
+
                 for (int i = rect.Length - 1; i > 0; i--)
                 {
                     //write x coordinate, newline, write y coordinate, and write color, next rectangle, etc.
@@ -378,8 +643,10 @@ namespace PaintApp
 
                 sw.Close();
 
-                MessageBox.Show("Successfully saved to: " + location);
-            }catch(Exception ex)
+                unchanged = rect.Length;
+
+            }
+            catch(Exception ex)
             {
                 MessageBox.Show(ex.Message + "\nError writing to file: " + location);
             }
@@ -401,13 +668,6 @@ namespace PaintApp
                     length++;
                 }
 
-                if(length > 1201) // 800 is filled board, simple check to make sure they're not trying to add more blocks then whats allowed
-                {
-                    MessageBox.Show("Are you sure this is a PaintApp file? Seems to be to large to be, stopping...");
-                    sr1.Close();
-                    return;
-                }
-
                 sr1.Close();
             }catch(Exception ex)
             {
@@ -423,6 +683,18 @@ namespace PaintApp
                 Color oldColor = rectColorPicker.Color;
 
                 resetBoard(); // reset board, no overlapping artwork
+
+                smallLayout = Convert.ToBoolean(sr.ReadLine());
+
+                if (smallLayout)
+                {
+                    layoutSize = 16;
+                    gridSize = 40;
+                    maxBound = 624;
+                    smallLayoutLabel.Text = "Larger Layout";
+                    player = new Rectangle(_x, _y, 16, 16);
+                    drawBoard.Invalidate();
+                }
 
                 //this first step we actually place/create rectangles
                 for (int i = 0; i < length / 2 - 1; i++) // we divide by two because 1 block takes two lines in file.
@@ -446,13 +718,14 @@ namespace PaintApp
                     if (rect[i].Color.Color.ToArgb() == 0)
                         deleteBlock();
 
+                unchanged = rect.Length;
+
                 //reset player pos so theyre not in the middle of nowhere
                 player.X = 0;
                 player.Y = 0;
                 rectColorPicker.Color = oldColor;
 
                 sr.Close();//close text file.
-                MessageBox.Show("Successfully opened: " + location);
             }
             catch(Exception ex)
             {
@@ -487,6 +760,11 @@ namespace PaintApp
                 color = new SolidBrush(rectColorPicker.Color).Color;
 
                 blockBrush = new SolidBrush(color);
+
+                if (rectColorPicker.Color == Color.Red)
+                    playerCol = new SolidBrush(Color.DarkGray);
+                else
+                    playerCol = new SolidBrush(Color.Red);
             }
             drawBoard.Invalidate();
         }
@@ -519,14 +797,16 @@ namespace PaintApp
 
         private void saveFileLabel_Click(object sender, EventArgs e)
         {
-            if (savePaintDialog.ShowDialog() == DialogResult.OK)
-                savePaintFile(savePaintDialog.FileName);
+            savePaintFile(autoSaveLocation);
+            unchanged = rect.Length;
+            this.Text = "PaintApp - " + Path.GetFileNameWithoutExtension(autoSaveLocation);
         }
 
-        private void openFileLabel_Click(object sender, EventArgs e)
+        private void closeProjectLabel_Click(object sender, EventArgs e)
         {
-            if (openSaveDialog.ShowDialog() == DialogResult.OK)
-                loadSaveFile(openSaveDialog.FileName);
+            savePaintFile(autoSaveLocation);
+            Program.KeepRunning = true;
+            this.Close();
         }
 
         private void takePictureLabel_Click(object sender, EventArgs e)
@@ -552,9 +832,7 @@ namespace PaintApp
 
         private void GetColorLabel_Click(object sender, EventArgs e)
         {
-            for (int i = rect.Length - 1; i > 0; i--)
-                if (player.Contains(rect[i].Rect))
-                    rectColorPicker.Color = rect[i].Color.Color;
+            getColorFromBlock();
         }
 
         private void FillColorLabel_Click(object sender, EventArgs e)
@@ -567,20 +845,20 @@ namespace PaintApp
 
             player.X = 0;
             player.Y = 0;
-            for (int i = 0; i < 400; i++)
+            for (int i = 0; i < gridSize * gridSize; i++)
             {
                 placeBlock();
 
-                if (player.X < 608)
-                    player.X += 32;
+                if (player.X < maxBound)
+                    player.X += layoutSize;
                 else
                     player.X = 0;
 
                 if (player.X == 0)
-                    if (player.Y < 608)
-                        player.Y += 32;
+                    if (player.Y < maxBound)
+                        player.Y += layoutSize;
 
-                if (player.X == 608 && player.Y == 608)
+                if (player.X == maxBound && player.Y == maxBound)
                 {
                     placeBlock();
                 }
@@ -601,7 +879,142 @@ namespace PaintApp
 
             hf.ShowDialog();
         }
+
+        private void ColorBoxWhite_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.White;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxRed_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Red;
+
+            playerCol = new SolidBrush(Color.DarkGray);
+        }
+
+        private void ColorBoxOrange_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.DarkOrange;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxYellow_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Yellow;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxGreen_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Green;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxAqua_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Aqua;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxBlue_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Blue;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void ColorBoxBlack_Click(object sender, EventArgs e)
+        {
+            rectColorPicker.Color = Color.Black;
+
+            if (playerCol.Color == Color.DarkGray)
+                playerCol = new SolidBrush(Color.Red);
+        }
+
+        private void SaveAsLabel_Click(object sender, EventArgs e)
+        {
+            if (savePaintDialog.ShowDialog() == DialogResult.OK)
+            {
+                savePaintFile(savePaintDialog.FileName);
+                autoSaveLocation = savePaintDialog.FileName;
+                this.Text = "PaintApp - " + Path.GetFileNameWithoutExtension(autoSaveLocation);
+            }
+        }
+
+        private void SmallLayoutLabel_Click(object sender, EventArgs e)
+        {
+            DialogResult dr = MessageBox.Show("In order to change the layout, you must reset the board.\nAre you sure you want to do this?",
+                        "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+            if (dr == DialogResult.Yes)
+            {
+                if (smallLayoutLabel.Text == "Smaller Layout" || !smallLayout)
+                {
+                    smallLayout = true;
+                    layoutSize = 16;
+                    gridSize = 40;
+                    maxBound = 624;
+                    smallLayoutLabel.Text = "Larger Layout";
+                    player = new Rectangle(_x, _y, 16, 16);
+                    drawBoard.Invalidate();
+                }
+                else if (smallLayoutLabel.Text == "Larger Layout" || smallLayout)
+                {
+                    smallLayout = false;
+                    layoutSize = 32;
+                    gridSize = 20;
+                    maxBound = 608;
+                    smallLayoutLabel.Text = "Smaller Layout";
+                    player = new Rectangle(_x, _y, 32, 32);
+                    drawBoard.Invalidate();
+                }
+            }
+        }
+
         #endregion
 
+        private void AutoSaveTimer_Tick(object sender, EventArgs e)
+        {
+            savePaintFile(autoSaveLocation);
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (unchanged != rect.Length)
+            {
+                DialogResult unsaved = MessageBox.Show("You have unsaved progress. Do you want to save before exiting?",
+                            "Warning", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation);
+
+                if (unsaved == DialogResult.Yes)
+                    savePaintFile(autoSaveLocation);
+            }
+
+            DialogResult exit = MessageBox.Show("Are you sure you want to exit?",
+                            "", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (exit == DialogResult.No)
+                e.Cancel = true;
+
+        }
+
+        private void TitleUpdate_Tick(object sender, EventArgs e)
+        {
+            if (unchanged != rect.Length && !this.Text.Contains("*"))
+            {
+                this.Text += " *";
+                this.Refresh();
+            }
+        }
     }
 }

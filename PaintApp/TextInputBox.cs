@@ -38,7 +38,6 @@ namespace PaintApp
             int height;
             if(int.TryParse(materialSingleLineTextField1.Text, out width) && int.TryParse(materialSingleLineTextField1.Text, out height))
             {
-                Form1 f1 = new Form1();
                 picWidth = width;
                 picHeight = height;
                 isInputtingNumber = false;
