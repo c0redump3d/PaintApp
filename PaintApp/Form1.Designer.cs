@@ -159,7 +159,7 @@
             this.closeProjectLabel.Depth = 0;
             this.closeProjectLabel.Font = new System.Drawing.Font("Roboto", 11F);
             this.closeProjectLabel.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.closeProjectLabel.Location = new System.Drawing.Point(667, 593);
+            this.closeProjectLabel.Location = new System.Drawing.Point(667, 602);
             this.closeProjectLabel.MouseState = MaterialSkin.MouseState.HOVER;
             this.closeProjectLabel.Name = "closeProjectLabel";
             this.closeProjectLabel.Size = new System.Drawing.Size(100, 19);

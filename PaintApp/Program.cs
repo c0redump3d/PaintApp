@@ -20,7 +20,14 @@ namespace PaintApp
             KeepRunning = true;
             while (KeepRunning)
             {
-                Application.Run(args.Length == 0 ? new Form1(string.Empty) : new Form1(args[0]));
+                try
+                {
+                    Application.Run(args.Length == 0 ? new Form1(string.Empty) : new Form1(args[0]));
+                }
+                catch (Exception)
+                {
+                    return;
+                }
                 if(args.Length != 0)
                     args[0] = string.Empty;
             }

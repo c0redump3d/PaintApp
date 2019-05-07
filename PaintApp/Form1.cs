@@ -61,6 +61,18 @@ namespace PaintApp
         {
             InitializeComponent();
 
+            ApplicationSettings appSettings = new ApplicationSettings();
+
+            appSettings.createFile(); // creates file if necessary
+            appSettings.getFirstLaunch(); // if its first launch below function will launch firststarttutorial
+            appSettings.saveFile(); // save file, just writes one boolean value so isfirstlaunch will return true
+
+            if (!appSettings.isNotFirstLaunch())
+            {
+                FirstStartTutorial tutorial = new FirstStartTutorial();
+                tutorial.ShowDialog();
+            }
+
             if (path != string.Empty && Path.GetExtension(path).ToLower() == ".pntapp")
             {
                 launchProjScreen = false;
@@ -93,18 +105,6 @@ namespace PaintApp
                         return;
                     }
                 }
-            }
-
-            ApplicationSettings appSettings = new ApplicationSettings();
-
-            appSettings.createFile(); // creates file if necessary
-            appSettings.getFirstLaunch(); // if its first launch below function will launch firststarttutorial
-            appSettings.saveFile(); // save file, just writes one boolean value so isfirstlaunch will return true
-
-            if (!appSettings.isNotFirstLaunch())
-            {
-                FirstStartTutorial tutorial = new FirstStartTutorial();
-                tutorial.ShowDialog();
             }
 
             //set up material form
@@ -302,6 +302,9 @@ namespace PaintApp
 
         private void DrawBoard_MouseMove(object sender, MouseEventArgs e)
         {
+            if (!usingMouseControls)// helps cpu usage when not using mouse controls
+                return;
+
             if (leftMouseDown)
                 mousePlace();
             else if (rightMouseDown)
@@ -309,6 +312,8 @@ namespace PaintApp
 
             if (usingMouseControls)
             {
+
+                //if we're using mouse controls, set player x,y to mouse x,y
 
                 var cursorPos = drawBoard.PointToClient(Cursor.Position);
 
@@ -333,6 +338,8 @@ namespace PaintApp
                 drawBoard.Invalidate();
             }
 
+            // I could use Thread.Sleep(1) but I'd rather not freeze the application.
+
         }
 
         #endregion
@@ -349,7 +356,7 @@ namespace PaintApp
                     e.Graphics.FillRectangle(rect[i].Color, rect[i].Rect);
 
                 if (!takingScreenshot)
-                    e.Graphics.FillRectangle(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
+                    e.Graphics.FillRectangle(new SolidBrush(rectColorPicker.Color), player); // player
                 if (showGrid)
                 {
                     for (int x = 0; x < gridSize; x++) //grid
@@ -363,7 +370,7 @@ namespace PaintApp
                     e.Graphics.FillEllipse(rect[i].Color, rect[i].Rect);
 
                 if (!takingScreenshot)
-                    e.Graphics.FillEllipse(!usingMouseControls ? playerCol : new SolidBrush(rectColorPicker.Color), player); // player
+                    e.Graphics.FillEllipse(new SolidBrush(rectColorPicker.Color), player); // player
                 if (showGrid)
                 {
                     for (int x = 0; x < gridSize; x++) //grid.
@@ -456,7 +463,7 @@ namespace PaintApp
                 Bitmap bmp = new Bitmap(drawBoard.Width, drawBoard.Height, PixelFormat.Format32bppArgb); // create a new blank bitmap
 
                 if (tb.enableTransparency())
-                {
+                {//if user enabled transparency, set transparency key to form color(this will make entire window transparent for a short while)
                     this.TransparencyKey = this.BackColor;
                     transparencyEnabled = true;
                 }
@@ -471,21 +478,22 @@ namespace PaintApp
                 if(transparencyEnabled)
                     bmp.MakeTransparent(this.BackColor);
 
+                //we store in temp because i'm dumb and couldn't figure out GDI+ errors
                 bmp.Save(@"C:\temp\temp.png", ImageFormat.Png); // save temp png. now time for resizing
 
                 dialogClosed = true;
-                if (dialogClosed)
+                if (dialogClosed) // wait for dialog to be closed before trying to grab the width and height to resize the picture to.
                 {
                     using (var tempimg = Image.FromFile(@"C:\temp\temp.png"))
                     using (var resizedImage = resizePic(tempimg, tb.getWidth(), tb.getHeight()))
                     {
                         bmp.Dispose();
                         bmp = null;
-                        resizedImage.Save(saveBitmapDialog.FileName, ImageFormat.Png);
+                        resizedImage.Save(saveBitmapDialog.FileName, ImageFormat.Png); // save resized picture to the folder the user specified
                     }
                     File.Delete(@"C:\temp\temp.png"); // delete the temporary file, no point in having it.
-                    this.TransparencyKey = Color.Beige;
-                    transparencyEnabled = false;
+                    this.TransparencyKey = Color.Beige; // set transparency key to some random color
+                    transparencyEnabled = false; // disable transparency
                 }
             }
         }
@@ -510,6 +518,14 @@ namespace PaintApp
         #endregion
 
         #region Tool Bar Animation
+
+        /*
+         * 
+         * This animation uses the same logic as the snake game,
+         * start a timer and run until width/height of the form
+         * equals a certain number, once it does, stop the timer.
+         * 
+         */
 
         private void hideOrShowToolBar(bool start)
         {
@@ -593,7 +609,7 @@ namespace PaintApp
             {
                 StreamWriter sw = new StreamWriter(location);
 
-                sw.WriteLine(smallLayout);
+                sw.WriteLine(smallLayout); //write if drawing was using smaller 40x40 layout or 20x20 layout.
 
                 for (int i = rect.Length - 1; i > 0; i--)
                 {
@@ -642,14 +658,14 @@ namespace PaintApp
 
                 StreamReader sr = new StreamReader(location);
 
-                Color oldColor = rectColorPicker.Color;
+                Color oldColor = rectColorPicker.Color; // remember old color
 
                 resetBoard(); // reset board, no overlapping artwork
 
-                smallLayout = Convert.ToBoolean(sr.ReadLine());
+                smallLayout = Convert.ToBoolean(sr.ReadLine()); // first thing to do is set correct grid layout.
 
                 if (smallLayout)
-                {
+                { // have to do it like this because trying to fake a label press was not working.
                     layoutSize = 16;
                     gridSize = 40;
                     maxBound = 624;
@@ -658,7 +674,7 @@ namespace PaintApp
                     drawBoard.Invalidate();
                 }
 
-                //this first step we actually place/create rectangles
+                //now, go through the file, set player x,y to the x,y found in the file and call placeBlock()
                 for (int i = 0; i < length / 2 - 1; i++) // we divide by two because 1 block takes two lines in file.
                 {
                     // super simple, for each line in text file, we read next line, set rectx = to x in file and recty = y in file and place.
@@ -955,12 +971,13 @@ namespace PaintApp
 
         private void AutoSaveTimer_Tick(object sender, EventArgs e)
         {
+            //every 5 minutes we save file, just incase of a crash.
             savePaintFile(autoSaveLocation);
         }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (unchanged != rect.Length)
+            if (unchanged != rect.Length)//notify the user if they have unsaved progress in their drawing.
             {
                 DialogResult unsaved = MaterialMessageBox.Show("You have unsaved progress. Do you want to save before exiting?",
                             "Warning", MessageBoxIcon.Warning, MessageBoxButtons.YesNo);
@@ -974,7 +991,7 @@ namespace PaintApp
         private void TitleUpdate_Tick(object sender, EventArgs e)
         {
             if (unchanged != rect.Length && !this.Text.Contains("*"))
-            {
+            {// if drawing has changed, add a tick mark to show changes have been made
                 this.Text += " *";
                 this.Refresh();
             }

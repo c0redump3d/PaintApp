@@ -23,14 +23,14 @@ namespace PaintApp
 
         public LaunchProjectForm()
         {
+            Program.KeepRunning = false;
+
             InitializeComponent();
 
             MaterialSkinManager materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
             materialSkinManager.Theme = MaterialSkinManager.Themes.DARK;
             materialSkinManager.ColorScheme = new ColorScheme(Primary.Grey900, Primary.Grey900, Primary.Grey900, 0, TextShade.WHITE);
-
-            Program.KeepRunning = false;
         }
 
         private void OpenExistingButton_Click(object sender, EventArgs e)
@@ -70,6 +70,11 @@ namespace PaintApp
         public string getNewLocation()
         {
             return newLocation;
+        }
+
+        private void LaunchProjectForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            Program.KeepRunning = false;
         }
     }
 }

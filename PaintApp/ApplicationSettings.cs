@@ -48,9 +48,12 @@ namespace PaintApp
             if (!Directory.Exists(appData + @"\PaintApp\")) //same thing, dont want to create directory that already exists
                 Directory.CreateDirectory(appData + @"\PaintApp\");
 
-            var highScoreTXT = File.Create(appData + @"\PaintApp\settings.txt");
+            if (!Directory.Exists(@"C:\temp\")) //create temp folder in c drive to save screenshots
+                Directory.CreateDirectory(@"C:\temp\");
 
-            highScoreTXT.Close();
+            var settingsTXT = File.Create(appData + @"\PaintApp\settings.txt");
+
+            settingsTXT.Close();
         }
 
         public void saveFile()// literally just writes true to file

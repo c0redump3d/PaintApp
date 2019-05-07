@@ -119,6 +119,7 @@
             this.Sizable = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Launch Project";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.LaunchProjectForm_FormClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
