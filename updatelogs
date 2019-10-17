@@ -1,0 +1,4 @@
+-Fixes crash report for unhandled exception when closing application after closing project and closing out the LaunchProjectForm.\\n
+-Create temp folder in C:\ if necessary, needed to save screenshots.\\n
+-Other minor changes\\n
+-New 80x80 layout
